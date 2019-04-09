@@ -1,7 +1,10 @@
 import * as express from 'express'
 import Product from './product.interface'
-import Controller from '../interfaces/controller.interface';
+import Controller from '../interfaces/controller.interface'
 import productModel from './product.model'
+import NotFoundException from '../exceptions/notFoundException'
+import validationMiddleware from '../middleware/validation.middleware'
+import CreateProductDto from './product.dto'
 
 class ProductController implements Controller {
   public path = '/product'
@@ -15,7 +18,7 @@ class ProductController implements Controller {
   public initializeRoutes() {
     this.router.get(this.path, this.getAllProducts)
     this.router.get(`${this.path}/:id`, this.getProduct)
-    this.router.post(this.path, this.createProduct)
+    this.router.post(this.path, validationMiddleware(CreateProductDto), this.createProduct)
     this.router.delete(`${this.path}/:id`, this.deleteProduct)
   }
 
@@ -25,10 +28,14 @@ class ProductController implements Controller {
     })
   }
 
-  getProduct = (req: express.Request, res: express.Response) => {
+  getProduct = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const id = req.params.id
     this.product.findById(id).then((product) => {
-      res.send(product)
+      if (product) {
+        res.send(product)
+      } else {
+        next(new NotFoundException(id));
+      }
     })
   }
 
@@ -40,13 +47,13 @@ class ProductController implements Controller {
     })
   }
 
-  deleteProduct = (req: express.Request, res: express.Response) => {
+  deleteProduct = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const id = req.params.id
     this.product.findByIdAndDelete(id).then((successResponse) => {
       if (successResponse) {
         res.send(200)
       } else {
-        res.send(404)
+        next(new NotFoundException(id))
       }
     })
   }

@@ -1,7 +1,8 @@
 import * as express from 'express'
-import * as bodyParser from 'body-parser';
-import * as mongoose from 'mongoose';
-import Controller from './interfaces/controller.interface';
+import * as bodyParser from 'body-parser'
+import * as mongoose from 'mongoose'
+import Controller from './interfaces/controller.interface'
+import errorMiddleware from './middleware/error.middleware'
 
 class App {
   public app: express.Application
@@ -31,6 +32,9 @@ class App {
 
   private initializeMiddleware() {
     this.app.use(bodyParser.json())
+
+    // ErrorMiddleware needs to be added at the end of the stack
+    this.app.use(errorMiddleware)
   }
 
   private initializeControllers(controllers) {

@@ -2,6 +2,9 @@ import * as express from 'express'
 import Category from './category.interface'
 import Controller from '../interfaces/controller.interface';
 import categoryModel from './category.model'
+import validationMiddleware from '../middleware/validation.middleware'
+import CreateCategoryDto from './category.dto'
+import NotFoundException from '../exceptions/notFoundException'
 
 class CategoryController implements Controller {
   public path = '/category'
@@ -15,7 +18,7 @@ class CategoryController implements Controller {
   public initializeRoutes() {
     this.router.get(this.path, this.getAllCategorys)
     this.router.get(`${this.path}/:id`, this.getCategory)
-    this.router.post(this.path, this.createCategory)
+    this.router.post(this.path, validationMiddleware(CreateCategoryDto), this.createCategory)
     this.router.delete(`${this.path}/:id`, this.deleteCategory)
   }
 
@@ -25,10 +28,14 @@ class CategoryController implements Controller {
     })
   }
 
-  getCategory = (req: express.Request, res: express.Response) => {
+  getCategory = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const id = req.params.id
     this.category.findById(id).then((category) => {
-      res.send(category)
+      if (category) {
+        res.send(category)
+      } else {
+        next(new NotFoundException(id))
+      }
     })
   }
 
@@ -40,13 +47,13 @@ class CategoryController implements Controller {
     })
   }
 
-  deleteCategory = (req: express.Request, res: express.Response) => {
+  deleteCategory = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const id = req.params.id
     this.category.findByIdAndDelete(id).then((successResponse) => {
       if (successResponse) {
         res.send(200)
       } else {
-        res.send(404)
+        next(new NotFoundException(id))
       }
     })
   }
