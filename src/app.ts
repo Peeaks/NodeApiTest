@@ -1,6 +1,7 @@
 import * as express from 'express'
 import * as bodyParser from 'body-parser'
 import * as mongoose from 'mongoose'
+import * as cookieParser from 'cookie-parser'
 import Controller from './interfaces/controller.interface'
 import errorMiddleware from './middleware/error.middleware'
 
@@ -32,6 +33,7 @@ class App {
 
   private initializeMiddleware() {
     this.app.use(bodyParser.json())
+    this.app.use(cookieParser())
 
     // ErrorMiddleware needs to be added at the end of the stack
     this.app.use(errorMiddleware)

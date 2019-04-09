@@ -4,7 +4,8 @@ import Product from './product.interface'
 const productSchema = new mongoose.Schema({
   name: String,
   description: String,
-  price: Number
+  price: Number,
+  ownerId: String
 })
 
 const productModel = mongoose.model<Product & mongoose.Document>('Product', productSchema)
