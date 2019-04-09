@@ -28,12 +28,14 @@ class ProductController implements Controller {
 
   getAllProducts = async (req: express.Request, res: express.Response) => {
     const products = await this.product.find()
+      .populate('owner', '-password').populate('category')
     res.send(products)
   }
 
   getProduct = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const id = req.params.id
     const product = await this.product.findById(id)
+      .populate('owner', '-password').populate('category')
     if (product) {
       res.send(product)
     } else {
@@ -45,21 +47,21 @@ class ProductController implements Controller {
     const productData: Product = req.body;
     const createdProduct = new this.product({
       ...productData,
-      ownerId: req.user._id
+      owner: req.user._id
     })
     const savedProduct = await createdProduct.save()
+    await savedProduct.populate('owner', '-password').populate('category').execPopulate()
     res.send(savedProduct)
   }
 
   deleteProduct = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const id = req.params.id
-
     const successResponse = await this.product.findByIdAndDelete(id)
-      if (successResponse) {
-        res.send(200)
-      } else {
-        next(new NotFoundException(id))
-      }
+    if (successResponse) {
+      res.send(200)
+    } else {
+      next(new NotFoundException(id))
+    }
   }
 }
 

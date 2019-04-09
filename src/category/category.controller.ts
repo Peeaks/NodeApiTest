@@ -5,6 +5,8 @@ import categoryModel from './category.model'
 import validationMiddleware from '../middleware/validation.middleware'
 import CreateCategoryDto from './category.dto'
 import NotFoundException from '../exceptions/notFoundException'
+import authMiddleware from '../middleware/auth.middleware'
+import RequestWithUser from '../interfaces/requestWithUser.interface'
 
 class CategoryController implements Controller {
   public path = '/category'
@@ -18,44 +20,48 @@ class CategoryController implements Controller {
   public initializeRoutes() {
     this.router.get(this.path, this.getAllCategorys)
     this.router.get(`${this.path}/:id`, this.getCategory)
-    this.router.post(this.path, validationMiddleware(CreateCategoryDto), this.createCategory)
-    this.router.delete(`${this.path}/:id`, this.deleteCategory)
+
+    // Add auth middleware to post/delete
+    this.router.post(this.path, authMiddleware, validationMiddleware(CreateCategoryDto), this.createCategory)
+    this.router.delete(`${this.path}/:id`, authMiddleware, this.deleteCategory)
   }
 
-  getAllCategorys = (req: express.Request, res: express.Response) => {
-    this.category.find().then((categorys) => {
-      res.send(categorys)
-    })
+  getAllCategorys = async (req: express.Request, res: express.Response) => {
+    const products = await this.category.find()
+      .populate('owner', '-password')
+    res.send(products)
   }
 
-  getCategory = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  getCategory = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const id = req.params.id
-    this.category.findById(id).then((category) => {
-      if (category) {
-        res.send(category)
-      } else {
-        next(new NotFoundException(id))
-      }
-    })
+    const category = await this.category.findById(id)
+      .populate('owner', '-password')
+    if (category) {
+      res.send(category)
+    } else {
+      next(new NotFoundException(id))
+    }
   }
 
-  createCategory = (req: express.Request, res: express.Response) => {
+  createCategory = async (req: RequestWithUser, res: express.Response) => {
     const categoryData: Category = req.body;
-    const createdCategory = new this.category(categoryData)
-    createdCategory.save().then((savedCategory) => {
-      res.send(savedCategory)
+    const createdCategory = new this.category({
+      ...categoryData,
+      owner: req.user._id
     })
+    const savedCategory = await createdCategory.save()
+    await savedCategory.populate('owner', '-password').execPopulate()
+    res.send(savedCategory)
   }
 
-  deleteCategory = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  deleteCategory = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const id = req.params.id
-    this.category.findByIdAndDelete(id).then((successResponse) => {
-      if (successResponse) {
-        res.send(200)
-      } else {
-        next(new NotFoundException(id))
-      }
-    })
+    const successResponse = await this.category.findByIdAndDelete(id)
+    if (successResponse) {
+      res.send(200)
+    } else {
+      next(new NotFoundException(id))
+    }
   }
 }
 

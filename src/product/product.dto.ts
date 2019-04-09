@@ -9,6 +9,9 @@ class CreateProductDto {
 
   @IsNumber()
   public price: number
+
+  @IsString()
+  public category: string
 }
 
 export default CreateProductDto

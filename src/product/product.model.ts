@@ -5,7 +5,14 @@ const productSchema = new mongoose.Schema({
   name: String,
   description: String,
   price: Number,
-  ownerId: String
+  owner: {
+    ref: 'User',
+    type: mongoose.Schema.Types.ObjectId
+  },
+  category: {
+    ref: 'Category',
+    type: mongoose.Schema.Types.ObjectId
+  }
 })
 
 const productModel = mongoose.model<Product & mongoose.Document>('Product', productSchema)
